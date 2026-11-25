@@ -75,6 +75,30 @@ def test_missing_registration_is_error_not_fal(monkeypatch, tmp_path):
     fal.assert_not_called()
 
 
+@pytest.mark.parametrize("fail_on_refresh", [False, True])
+def test_discovery_error_fallback_depends_on_phase(monkeypatch, tmp_path, fail_on_refresh):
+    config(monkeypatch, tmp_path, {"provider": "openai-codex"})
+    calls = []
+
+    def discover(force=False):
+        calls.append(force)
+        if force == fail_on_refresh:
+            raise RuntimeError("fixture discovery failure")
+
+    monkeypatch.setattr(plugins, "_ensure_plugins_discovered", discover)
+    fal = Mock(return_value='{"fixture": "fal"}')
+    monkeypatch.setattr(tool, "image_generate_tool", fal)
+    result = json.loads(tool._handle_image_generate({"prompt": "fixture"}))
+    if fail_on_refresh:
+        assert calls == [False, True]
+        assert result["error_type"] == "provider_not_registered"
+        fal.assert_not_called()
+    else:
+        assert calls == [False]
+        assert result == {"fixture": "fal"}
+        fal.assert_called_once_with(prompt="fixture", aspect_ratio="landscape")
+
+
 @pytest.mark.parametrize("section", ["openai-codex", [], {"provider": ["openai-codex"]}])
 def test_incompatible_provider_shape_is_treated_as_unset(monkeypatch, tmp_path, section):
     config(monkeypatch, tmp_path, section)

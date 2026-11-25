@@ -2,7 +2,11 @@
 
 ## Escopo e método
 
-Caracterização do código existente em `43e566f77eaf01293086eb7cb99a21e240d60634`, sem alterar runtime, modelos de conversa/execução, configs reais ou credenciais. Testes no worktree exclusivo `test/codex-image-contract`. Não houve chamada de geração externa, instalação, restart ou publicação. A rede nos novos testes é bloqueada por fixture; fronteiras de credenciais e cliente externo são simuladas. GitHub é utilizado apenas para entrega do PR.
+Repositório auditado: `https://github.com/gvillalta99/hermes-agent` (checkout compartilhado `/home/aposentados/.hermes/hermes-agent`, não modificado). PR existente: https://github.com/gvillalta99/hermes-agent/pull/1, branch `audit-codex-image-t27d7500e`, base `main`. Worktree exclusivo: `/home/aposentados/.hermes/kanban/workspaces/t_27d7500e/hermes`.
+
+Caracterização do código de produção existente em `43e566f77eaf01293086eb7cb99a21e240d60634`. HEAD de entrada desta reconciliação: `6fb3c962f91f40f5e95fdfe1f433b44c40e8e6b8` (primeira entrega de testes/relatório). Somente estes dois artefatos são modificados pelo PR; o código auditado permanece idêntico à base. O HEAD final testado/remoto e os resultados pós-commit são registrados no card `t_27d7500e`, evitando autorreferência circular de SHA neste documento. Para identificar o commit que contém esta versão: `git log -1 --format=%H -- docs/codex-image-resolution-audit.md`.
+
+Sem alterar runtime, modelos de conversa/execução, configs reais ou credenciais. Não houve chamada de geração externa, instalação, restart ou publicação. A rede nos testes de contrato é bloqueada por fixture; fronteiras de credenciais e cliente externo são simuladas. GitHub é utilizado para entrega do PR existente e consultas de reconciliação; nenhuma operação de merge.
 
 ## Configuração recomendada (não aplicada nesta auditoria)
 
@@ -52,9 +56,20 @@ Comando a partir do worktree (venv existente acessível via symlink local não v
 scripts/run_tests.sh tests/plugins/image_gen/test_codex_resolution_contract.py tests/plugins/image_gen/test_openai_codex_provider.py tests/tools/test_image_generation_plugin_dispatch.py tests/agent/test_image_gen_registry.py -q --basetemp="$PWD/.test-tmp"
 ```
 
-PASS: 45 testes em 11,72s; inclui 14 novos testes de caracterização e 31 existentes. Não há mudança de produção: não se alega ciclo RED/GREEN de correção.
+Primeira entrega: PASS, 45 testes em 11,72s (14 de contrato e 31 existentes). Reconciliação: PASS, 47 testes em 6,58s antes do commit (16 de contrato e os mesmos 31 existentes), após incluir os dois cenários de erro de discovery. Não há mudança de produção: testes de caracterização, sem alegação de ciclo RED/GREEN de correção. Reexecução pós-commit e SHA exato ficam nas evidências finais do card.
 
-PASS nos testes novos: plugin disponível com provider ausente não se auto-seleciona; seleção explícita chega ao plugin real e devolve auth_required sem FAL; provider inexistente gera erro; shapes incompatíveis são tratados como ausentes; precedência e fallbacks de tier; configs e diretórios de cache distintos ao alternar HERMES_HOME A/B/A; disponibilidade true não impede api_error.
+Verificações executadas adicionalmente:
+
+```sh
+.venv/bin/python -m ruff check tests/plugins/image_gen/test_codex_resolution_contract.py
+git diff --check
+```
+
+Ambas PASS. As verificações staged e base..HEAD são registradas no card após preparar o commit.
+
+PASS nos testes de contrato: plugin disponível com provider ausente não se auto-seleciona; seleção explícita chega ao plugin real e devolve auth_required sem FAL; provider inexistente gera erro; exceção de discovery inicial permite FAL, enquanto exceção no refresh mantém provider_not_registered sem FAL; shapes incompatíveis são tratados como ausentes; precedência e fallbacks de tier; configs e diretórios de cache distintos ao alternar HERMES_HOME A/B/A; disponibilidade true não impede api_error.
+
+Consulta remota inicial desta reconciliação: PR OPEN no HEAD `6fb3c962f91f40f5e95fdfe1f433b44c40e8e6b8`, `statusCheckRollup=[]`, `reviews=[]`, `mergedAt=null`. Checks ausentes: N/A/não configurados, nunca CI verde. A atualização do HEAD remoto e de seus checks será reconferida após o push e registrada no card. Não há aprovação humana nem merge comprovados ou exigidos para concluir esta auditoria offline.
 
 O isolamento testado é de resolução de config e caminho de saída com HERMES_HOME temporário e Path.home() isolado. Não prova isolamento de credenciais reais, processos gateway compartilhados ou ausência de herança de variáveis de ambiente entre processos. Os bytes do teste de cache são fixture sintética, não imagem gerada externamente.
 
